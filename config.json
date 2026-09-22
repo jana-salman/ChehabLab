@@ -1,0 +1,54 @@
+ {
+ "encoder":  [
+    {
+        "name": "Google ViT",
+        "id": "google/vit-base-patch16-224-in21k",
+        "type": "Transformer",
+        "input_size": 224,
+        "params": "86.4M",
+        "active": true,
+        "output_size": 768
+    },
+
+    {
+        "name": "OpenAI CLIP",
+        "id": "openai/clip-vit-base-patch32",
+        "type": "Foundation",
+        "input_size": 224,
+        "params": "88M",
+        "active": true,
+        "output_size": 768
+    },
+
+    {
+    "name": "DINOv3",
+    "id": "facebook/dinov3-vitb16-pretrain-lvd1689m",
+    "type": "SSL",
+    "input_size": 224,
+    "params": "85.7M",
+    "active": true,
+    "output_size": 768
+    },
+    
+    {
+    "name": "RAD-DINO",
+    "id": "microsoft/rad-dino",
+    "type": "SSL",
+    "input_size": 518,
+    "params": "86.6M",
+    "active": true,
+    "output_size": 768
+    },
+
+    {
+    "name": "BioMedCLIP",
+    "id": "microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224",
+    "type": "Foundation",
+    "input_size": 224,
+    "params": "86M",
+    "active": true,
+    "output_size": 512
+    }
+    
+    ]   
+ }
