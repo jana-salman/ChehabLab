@@ -12,27 +12,19 @@ def get_encoder(encoder_id, device=None):
     # BioMedCLIP uses OpenCLIP instead of Hugging Face Transformers
     if "biomedclip" in encoder_id.lower():
 
-        encoder, _, image_processor = open_clip.create_model_and_transforms(
-            f"hf-hub:{encoder_id}"
-        )
-
+        encoder, _, image_processor = open_clip.create_model_and_transforms(f"hf-hub:{encoder_id}")
         encoder = encoder.to(device)
 
     # Google ViT, OpenAI CLIP, DINOv3 and RAD-DINO
     else:
-
-        image_processor = AutoImageProcessor.from_pretrained(
-            encoder_id
-        )
-
-        encoder = AutoModel.from_pretrained(
-            encoder_id
-        ).to(device)
+        image_processor = AutoImageProcessor.from_pretrained(encoder_id)
+        encoder = AutoModel.from_pretrained(encoder_id).to(device)
 
     encoder.eval() #switch to evaluation mode: dropout and batchnorm are altered accordingly,
                    #but does not stop tracking gradients.
 
     return encoder, image_processor
+
 
 def get_features(encoder, X, layer):
 
@@ -85,12 +77,13 @@ def get_features(encoder, X, layer):
 
     return output
 
+
 def test_encoder(encoder_id):
 
     # Load the model
     encoder, _ = get_encoder(encoder_id)
 
-    # Create a dummy batch of 2 images
+    # Create dummy images
     size = 518 if "rad-dino" in encoder_id.lower() else 224
     X = torch.rand(2, 3, size, size)
 
@@ -102,26 +95,30 @@ def test_encoder(encoder_id):
     elif hasattr(encoder, "visual"):
         layer = encoder.visual.trunk.blocks[-1]
 
-    # Google ViT and RAD-DINO
-    elif (
-        hasattr(encoder, "encoder")
-        and hasattr(encoder.encoder, "layer")
-    ):
+    # Current Hugging Face ViT
+    elif hasattr(encoder, "layers"):
+        layer = encoder.layers[-1]
+
+    # Older Hugging Face ViT / RAD-DINO structures
+    elif hasattr(encoder, "encoder") and hasattr(encoder.encoder, "layer"):
         layer = encoder.encoder.layer[-1]
 
     # DINOv3
-    elif (
-        hasattr(encoder, "model")
-        and hasattr(encoder.model, "layer")
-    ):
+    elif hasattr(encoder, "model") and hasattr(encoder.model, "layer"):
         layer = encoder.model.layer[-1]
 
+    # Fallback
     else:
-        raise Exception(
-            f"Could not find transformer layers for {type(encoder)}"
-        )
+        block_lists = [
+            m for m in encoder.modules()
+            if isinstance(m, torch.nn.ModuleList)
+        ]
 
-    # Extract features
+        if not block_lists:
+            raise Exception("Could not find the transformer layers.")
+
+        layer = max(block_lists, key=len)[-1]
+
     features = get_features(encoder, X, layer)
 
     print(
