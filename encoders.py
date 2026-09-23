@@ -85,30 +85,49 @@ def get_features(encoder, X, layer):
 
     return output
 
-def test_(encoder_id):
-    #Load the model and its preprocessor
-    encoder, image_processor = get_encoder(encoder_id)
+def test_encoder(encoder_id):
 
-    #Create a dummy batch of 2 images: (B, 3, H, W)
+    # Load the model
+    encoder, _ = get_encoder(encoder_id)
+
+    # Create a dummy batch of 2 images
     size = 518 if "rad-dino" in encoder_id.lower() else 224
     X = torch.rand(2, 3, size, size)
 
-    #Choose the last transformer block layer
-    #OpenAI CLIP
-    if hasattr(encoder, "vision_model"):        
+    # OpenAI CLIP
+    if hasattr(encoder, "vision_model"):
         layer = encoder.vision_model.encoder.layers[-1]
-    #BioMedCLIP
-    elif hasattr(encoder, "visual"):            
-        layer = encoder.visual.trunk.blocks[-1]
-    #Google ViT, RAD-DINO
-    elif hasattr(encoder, "encoder"):           
-        layer = encoder.encoder.layer[-1]
-    #DINOv3
-    else:                                       
-        layer = encoder.layer[-1]
 
-    #Extract features:
+    # BioMedCLIP
+    elif hasattr(encoder, "visual"):
+        layer = encoder.visual.trunk.blocks[-1]
+
+    # Google ViT and RAD-DINO
+    elif (
+        hasattr(encoder, "encoder")
+        and hasattr(encoder.encoder, "layer")
+    ):
+        layer = encoder.encoder.layer[-1]
+
+    # DINOv3
+    elif (
+        hasattr(encoder, "model")
+        and hasattr(encoder.model, "layer")
+    ):
+        layer = encoder.model.layer[-1]
+
+    else:
+        raise Exception(
+            f"Could not find transformer layers for {type(encoder)}"
+        )
+
+    # Extract features
     features = get_features(encoder, X, layer)
 
-    print(f"{encoder_id}: input {tuple(X.shape)} -> features {tuple(features.shape)}")
+    print(
+        f"{encoder_id}: "
+        f"input {tuple(X.shape)} -> "
+        f"features {tuple(features.shape)}"
+    )
+
     return features
